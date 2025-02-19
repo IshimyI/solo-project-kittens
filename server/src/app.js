@@ -1,79 +1,33 @@
 require("dotenv").config();
 const express = require("express");
 const logger = require("morgan");
-const { User, Inventory, Shop, TypeOfCloth, Message } = require("../db/models");
+const cookieParser = require("cookie-parser");
+const cors = require("cors");
+
+const router = require("./routes/router");
+const authRouter = require("./routes/authRouter");
+const tokensRouter = require("./routes/tokensRouter");
 
 const app = express();
-
 const { PORT } = process.env || 3000;
 
+const corsConfig = {
+  origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+  credentials: true,
+};
+
+app.use(cors(corsConfig));
 app.use(logger("dev"));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cookieParser());
 
-app.get("/users", async (req, res) => {
-  try {
-    res.status(200).send(
-      await User.findAll({
-        attributes: ["id", "name", "email", "password", "coins"],
-      })
-    );
-  } catch (error) {
-    console.log(error);
-    res.status(500).send(error.message);
-  }
-});
-
-app.get("/typeofcloth", async (req, res) => {
-  try {
-    res
-      .status(200)
-      .send(await TypeOfCloth.findAll({ attributes: ["id", "name"] }));
-  } catch (error) {
-    console.log(error);
-    res.status(500).send(error.message);
-  }
-});
-
-app.get("/shop", async (req, res) => {
-  try {
-    const shop = await Shop.findAll({
-      attributes: ["id", "name", "price", "path"],
-      include: { model: TypeOfCloth, attributes: ["name"] },
-    });
-    res.status(200).send(shop);
-  } catch (error) {
-    console.log(error);
-    req.status(500).send(error.message);
-  }
-});
-
-app.get("/inventory", async (req, res) => {
-  try {
-    res.status(200).send(
-      await Inventory.findAll({
-        attributes: [],
-        include: [
-          { model: User, attributes: ["name"] },
-          { model: Shop, attributes: ["name", "path"] },
-        ],
-      })
-    );
-  } catch (error) {
-    console.log(error);
-    res.status(500).send(error.message);
-  }
-});
-
-app.get("/message", async (req, res) => {
-  try {
-    res.status(200).send(await Message.findAll({ attributes: ["name"] }));
-  } catch (error) {
-    console.log(error);
-    res.status(500).send(error.message);
-  }
-});
+app.use("/api", router);
+app.use("/api/auth", authRouter);
+app.use("/api/tokens", tokensRouter);
 
 app.listen(PORT, () => {
   console.log(`Server listening on port: ${PORT}!`);
 });
+
+module.exports = app;
