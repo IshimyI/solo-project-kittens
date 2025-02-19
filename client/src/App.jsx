@@ -46,22 +46,11 @@ function App() {
     }
   };
 
-  // const handleLogout = async (e) => {
-  //   e.preventDefault();
-  //   const formData = new FormData(e.target);
-  //   const data = Object.fromEntries(formData);
-  //   const res = await axiosInstance.post("/auth/logout", data);
-  //   if (res.status === 200) {
-  //     setUser(null);
-  //     setAccessToken("");
-  //   }
-  // };
-
   const handleLogout = async () => {
     const res = await axiosInstance.post("/auth/logout");
     if (res.status === 200) {
       setUser(null);
-      setAccessToken(""); 
+      setAccessToken("");
     }
   };
 
