@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@theme {
+  --color-kitt-background: rgb(255, 237, 219);
+  --color-kitt-foreground: rgb(237, 205, 187);
+  --color-kitt-primary: rgb(227, 183, 160);
+  --color-kitt-secondary: rgb(191, 146, 112);
+  --color-kitt-txt: rgb(80, 80, 80);
+}

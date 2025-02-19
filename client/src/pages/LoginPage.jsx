@@ -1,4 +1,4 @@
-import React from "react";
+import { NavLink } from "react-router";
 
 export default function LoginPage({ handleLogin }) {
   return (
@@ -21,6 +21,7 @@ export default function LoginPage({ handleLogin }) {
         />
       </div>
       <button type="submit">Войти</button>
+      <NavLink to={"/signup"}>Еще нет аккаунта?</NavLink>
     </form>
   );
 }
