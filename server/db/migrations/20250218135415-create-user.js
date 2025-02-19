@@ -24,6 +24,8 @@ module.exports = {
       },
       coins: {
         type: Sequelize.INTEGER,
+        defaultValue: 0,
+        allowNull: false,
       },
       createdAt: {
         allowNull: false,
