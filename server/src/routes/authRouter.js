@@ -1,5 +1,5 @@
 const express = require("express");
-const { User } = require("../../db/models");
+const { User, Inventory, User_selected_items } = require("../../db/models");
 const bcrypt = require("bcrypt");
 const cookieConfig = require("../configs/cookieConfig");
 const jwt = require("jsonwebtoken");
@@ -14,13 +14,31 @@ authRouter.post("/signup", async (req, res) => {
   const hashpass = await bcrypt.hash(password, 10);
   const [newUser, created] = await User.findOrCreate({
     where: { email },
-    defaults: { name, password: hashpass },
+    defaults: {
+      name,
+      password: hashpass,
+      coins: 0,
+    },
   });
 
   if (!created) return res.sendStatus(402);
 
   const user = newUser.get();
   delete user.password;
+
+  await Inventory.bulkCreate([
+    { userId: user.id, itemId: 1 },
+    { userId: user.id, itemId: 5 },
+    { userId: user.id, itemId: 9 },
+  ]);
+
+  await User_selected_items.create({
+    userId: user.id,
+    hatId: 1,
+    bodyId: 5,
+    coatId: 9,
+  });
+
   const { accessToken, refreshToken } = generateTokens({ user });
   res
     .cookie("refreshToken", refreshToken, cookieConfig)

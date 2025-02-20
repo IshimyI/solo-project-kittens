@@ -20,8 +20,18 @@ export default function LoginPage({ handleLogin }) {
           id="pass1"
         />
       </div>
-      <button type="submit">Войти</button>
-      <NavLink to={"/signup"}>Еще нет аккаунта?</NavLink>
+      <button
+        className="m-3 bg-kitt-primary text-white px-4 py-2 rounded-lg hover:bg-kitt-secondary transition"
+        type="submit"
+      >
+        Войти
+      </button>
+      <NavLink
+        className="m-3 bg-kitt-primary text-white px-4 py-2 rounded-lg hover:bg-kitt-secondary transition"
+        to={"/signup"}
+      >
+        Еще нет аккаунта?
+      </NavLink>
     </form>
   );
 }
