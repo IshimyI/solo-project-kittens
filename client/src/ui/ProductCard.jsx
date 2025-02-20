@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, buyItem }) {
   return (
     <div
       className={`bg-white shadow-lg rounded-2xl p-4 flex flex-col items-center`}
@@ -11,7 +11,10 @@ export default function ProductCard({ product }) {
       <img src={`/imgs/${product.path}.png`} alt={product.name} />
       <h3 className="text-lg font-semibold mt-2">{product.name}</h3>
       <p className="text-gray-500 mt-1">{product.price} ç</p>
-      <button className="mt-3 bg-kitt-primary text-white px-4 py-2 rounded-lg hover:bg-kitt-secondary transition">
+      <button
+        onClick={() => buyItem(product)}
+        className="mt-3 bg-kitt-primary text-white px-4 py-2 rounded-lg hover:bg-kitt-secondary transition"
+      >
         Купить
       </button>
     </div>

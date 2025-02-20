@@ -7,13 +7,9 @@ const tokensRouter = express.Router();
 
 tokensRouter.get("/refresh", verifyRefreshToken, async (req, res) => {
   try {
-    console.log(`xrctivyuobiljhj cuygiolbjhvyugihobjhvuygihpo;bjvgihpo;`);
-
     const { accessToken, refreshToken } = generateTokens({
       user: res.locals.user,
     });
-    console.log(`accessToken }}}}}}}} ${accessToken}`);
-    console.log(`refreshToken }}}}}}}} ${refreshToken}`);
 
     res
       .cookie("refreshToken", refreshToken, cookieConfig)

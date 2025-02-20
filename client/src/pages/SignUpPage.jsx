@@ -27,8 +27,18 @@ export default function SignUpPage({ handleSignUp }) {
           id="pass1"
         />
       </div>
-      <button type="submit">Зарегистрироваться</button>
-      <NavLink to={"/login"}>Уже есть аккаунт?</NavLink>
+      <button
+        className="m-3 bg-kitt-primary text-white px-4 py-2 rounded-lg hover:bg-kitt-secondary transition"
+        type="submit"
+      >
+        Зарегистрироваться
+      </button>
+      <NavLink
+        className="m-3 bg-kitt-primary text-white px-4 py-2 rounded-lg hover:bg-kitt-secondary transition"
+        to={"/login"}
+      >
+        Уже есть аккаунт?
+      </NavLink>
     </form>
   );
 }
