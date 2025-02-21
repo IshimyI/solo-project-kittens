@@ -14,7 +14,7 @@ export default function ShopPage({ user, buyItem, products }) {
 
   return (
     <>
-      <h1 className="text-center text-3xl font-bold underline">
+      <h1 className="text-center text-3xl font-bold  m-3 bg-kitt-primary text-white px-4 py-2 rounded-lg mx-120">
         Магазин путешественника
       </h1>
       {products.length === 0 ? (

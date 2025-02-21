@@ -137,13 +137,24 @@ export default function ProfilePage({ user, boughtProducts }) {
     return <p className="text-center text-xl mt-10">Гардероб пуст...</p>;
 
   return (
-    <>
-      <h3 className="text-xl font-bold text-gray-700 text-center">
-        🎭 Гардероб
-      </h3>
-      <div className="flex items-center justify-around min-h-screen py-10">
+    <div
+      style={{
+        backgroundImage: `url(/imgs/default-wardrobe.png)`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        height: "87.5vh",
+        position: "relative",
+      }}
+    >
+      <h1 className="text-center text-3xl font-bold  m-3 bg-kitt-primary text-white px-4 py-2 rounded-lg mx-120">
+        Гардероб
+      </h1>
+      <div
+        className="flex items-center justify-around overflow-y-hidden"
+        style={{ height: "80vh" }}
+      >
         <div className="mt-10 w-80 flex flex-col items-center">
-          <div className="relative w-96 h-96 mt-6">
+          <div className="relative w-200 h-200 mt-6">
             {selectedCoat?.Shop && (
               <img
                 src={`/imgs/${selectedCoat.Shop.path}.png`}
@@ -178,7 +189,7 @@ export default function ProfilePage({ user, boughtProducts }) {
               selected
             );
             return previous && next ? (
-              <div key={index} className="flex items-center space-x-4 mt-4">
+              <div key={index} className="flex items-center space-x-4 ">
                 <button
                   onClick={() => {
                     console.log("Setting previous:", previous);
@@ -213,6 +224,6 @@ export default function ProfilePage({ user, boughtProducts }) {
           })}
         </div>
       </div>
-    </>
+    </div>
   );
 }

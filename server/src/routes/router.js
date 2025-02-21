@@ -111,8 +111,8 @@ router.get("/user-selected-items", async (req, res) => {
       coat: selectedItems.coatId,
     });
   } catch (error) {
-    console.error("Ошибка при загрузке выбранных элементов:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.log(error);
+    res.status(500).send(error.message);
   }
 });
 
@@ -150,8 +150,8 @@ router.put("/user-selected-items", async (req, res) => {
       coat: selectedItemsRecord.coatId,
     });
   } catch (error) {
-    console.error("Ошибка при обновлении выбранных элементов:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.log(error);
+    res.status(500).send(error.message);
   }
 });
 
@@ -183,6 +183,20 @@ router.get("/message", async (req, res) => {
     res.status(200).send(await Message.findAll({ attributes: ["name"] }));
   } catch (error) {
     console.log(error);
+    res.status(500).send(error.message);
+  }
+});
+
+router.post("/message", async (req, res) => {
+  const { name } = req.body;
+  if (!name || name.trim() === "") {
+    return res.status(400).send({ error: "Сообщение не может быть пустым" });
+  }
+  try {
+    await Message.create({ name });
+    res.status(200).send({ message: "Сообщение добавлено" });
+  } catch (error) {
+    console.error("Ошибка при добавлении сообщения:", error);
     res.status(500).send(error.message);
   }
 });

@@ -6,7 +6,7 @@ import ErrorPage from "./pages/ErrorPage/ErrorPage";
 import SignUpPage from "./pages/SignUpPage";
 import Layout from "./ui/Layout";
 import axiosInstance, { setAccessToken } from "./axiosInstance";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import LoginPage from "./pages/LoginPage";
 import { useNavigate } from "react-router-dom";
 
@@ -18,14 +18,114 @@ function App() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [messages, setMessages] = useState([]);
   const navigate = useNavigate();
+  const [countries, setCountries] = useState([]);
+  const audioRef = useRef(new Audio("/sounds/background-music.mp3"));
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    audioRef.current = new Audio("/sounds/background-music.mp3");
+    audioRef.current.loop = true;
+    audioRef.current.volume = 0.05;
+
+    const savedState = localStorage.getItem("musicPlaying");
+    if (savedState === "true") {
+      audioRef.current.play();
+      setIsPlaying(true);
+    }
+
+    return () => {
+      audioRef.current.pause();
+    };
+  }, []);
+
+  const toggleMusic = () => {
+    if (!audioRef.current) return;
+
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    localStorage.setItem("musicPlaying", !isPlaying);
+    setIsPlaying(!isPlaying);
+  };
+
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const response = await fetch("https://restcountries.com/v3.1/all");
+        const data = await response.json();
+        const countryList = data.map(
+          (country) => country.translations.rus.common
+        );
+        setCountries(countryList);
+      } catch (error) {
+        console.error("Ошибка загрузки стран:", error);
+      }
+    };
+
+    fetchCountries();
+  }, []);
+
+  const sendMessage = async (newCoins) => {
+    try {
+      if (countries.length === 0) {
+        console.warn("Список стран ещё не загружен.");
+        return;
+      }
+
+      const randomCountry =
+        countries[Math.floor(Math.random() * countries.length)];
+
+      const str = `${user.name} прибыл в страну "${randomCountry}", скопив уже ${newCoins} коинов!`;
+
+      const newMessage = { name: str };
+
+      setMessages((prevMessages) => {
+        const updatedMessages = [newMessage, ...prevMessages.slice(0, 2)];
+        localStorage.setItem("messages", JSON.stringify(updatedMessages));
+        return updatedMessages;
+      });
+
+      await axiosInstance.post("/message", { name: str });
+    } catch (error) {
+      console.error("Ошибка при отправке сообщения", error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const res = await axiosInstance.get("/message");
+        console.log("Все сообщения:", res.data);
+
+        const latestMessages = res.data.slice(-3);
+
+        setMessages(latestMessages);
+        localStorage.setItem("messages", JSON.stringify(latestMessages));
+      } catch (error) {
+        console.error("Ошибка загрузки сообщений:", error);
+      }
+    };
+
+    const savedMessages = localStorage.getItem("messages");
+    if (savedMessages) {
+      setMessages(JSON.parse(savedMessages));
+    } else {
+      fetchMessages();
+    }
+  }, []);
 
   const increaseCoins = async () => {
     try {
       const res = await axiosInstance.post("/coins/increase", {
         userId: user.id,
       });
+      const newCoins = res.data.coins;
 
-      setUser((prevUser) => ({ ...prevUser, coins: res.data.coins }));
+      setUser((prevUser) => ({ ...prevUser, coins: newCoins }));
+
+      await sendMessage(newCoins);
     } catch (error) {
       console.error("Ошибка при увеличении коинов", error);
     }
@@ -84,23 +184,23 @@ function App() {
         console.error("Ошибка загрузки купленных товаров:", error);
       }
     };
-
-    fetchBoughtProducts();
-
-    fetchProducts();
-  }, [user]);
-
-  useEffect(() => {
     const fetchMessages = async () => {
       try {
         const res = await axiosInstance.get("/message");
-        const lastMessages = res.data.slice(-3);
-        setMessages(lastMessages);
+        console.log("Новые сообщения:", res.data);
+        setMessages(res.data.slice(-3));
       } catch (error) {
         console.error("Ошибка загрузки сообщений:", error);
       }
     };
 
+    fetchBoughtProducts();
+    fetchMessages();
+
+    fetchProducts();
+  }, [user]);
+
+  useEffect(() => {
     axiosInstance("/tokens/refresh")
       .then((res) => {
         setUser(res.data.user);
@@ -114,12 +214,6 @@ function App() {
       .finally(() => {
         setLoadingUser(false);
       });
-
-    fetchMessages();
-
-    const interval = setInterval(fetchMessages, 5000);
-
-    return () => clearInterval(interval);
   }, []);
 
   if (loadingUser) return <p>Загрузка пользователя...</p>;
@@ -157,7 +251,16 @@ function App() {
 
   return (
     <Routes>
-      <Route element={<Layout user={user} handleLogout={handleLogout} />}>
+      <Route
+        element={
+          <Layout
+            user={user}
+            handleLogout={handleLogout}
+            toggleMusic={toggleMusic}
+            isPlaying={isPlaying}
+          />
+        }
+      >
         <Route
           path="/main"
           element={
@@ -165,6 +268,7 @@ function App() {
               user={user}
               increaseCoins={increaseCoins}
               messages={messages}
+              sendMessage={sendMessage}
             />
           }
         ></Route>
