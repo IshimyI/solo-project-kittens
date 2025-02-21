@@ -7,3 +7,22 @@
   --color-kitt-secondary: rgb(191, 146, 112);
   --color-kitt-txt: rgb(80, 80, 80);
 }
+
+.swing {
+  animation: swing 2s ease-in-out infinite;
+  transform-origin: center;
+  position: relative;
+  top: -200px;
+}
+
+@keyframes swing {
+  0% {
+    transform: rotate(25deg);
+  }
+  50% {
+    transform: rotate(-25deg);
+  }
+  100% {
+    transform: rotate(25deg);
+  }
+}

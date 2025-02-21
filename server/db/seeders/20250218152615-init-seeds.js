@@ -161,6 +161,31 @@ module.exports = {
       ],
       {}
     );
+
+    await queryInterface.bulkInsert(
+      "User_selected_items",
+      [
+        {
+          userId: 1,
+          hatId: 1,
+          bodyId: 5,
+          coatId: 9,
+        },
+        {
+          userId: 2,
+          hatId: 1,
+          bodyId: 5,
+          coatId: 9,
+        },
+        {
+          userId: 3,
+          hatId: 1,
+          bodyId: 5,
+          coatId: 9,
+        },
+      ],
+      {}
+    );
   },
 
   async down(queryInterface, Sequelize) {
