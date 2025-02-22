@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../axiosInstance";
 import axios from "axios";
@@ -8,6 +8,7 @@ export default function MainPage({
   increaseCoins,
   messages,
   sendMessage,
+  place,
 }) {
   const [selectedHat, setSelectedHat] = useState(null);
   const [selectedBody, setSelectedBody] = useState(null);
@@ -17,30 +18,57 @@ export default function MainPage({
   const [backgroundUrl, setBackgroundUrl] = useState(
     "/imgs/default-background.jpg"
   );
+  const isFetching = useRef(false);
 
   const navigate = useNavigate();
 
   const fetchBackground = async () => {
+    if (isFetching.current) return;
+    isFetching.current = true;
+
+    const savedBackground = localStorage.getItem(`background_${place}`);
+    if (savedBackground) {
+      setBackgroundUrl(savedBackground);
+      isFetching.current = false;
+      return;
+    }
+
     try {
       const response = await axios.get(
-        "https://api.unsplash.com/photos/random?client_id=ZhgmCvtObGLYrhK3MuvG8d-I7j9AAs-DNRM7zlmAtOQ&query=landscape"
+        `https://api.unsplash.com/photos/random?client_id=ZhgmCvtObGLYrhK3MuvG8d-I7j9AAs-DNRM7zlmAtOQ&query=${place
+          .split(" ")
+          .join("+")}+landscape`
+      );
+
+      console.log(
+        `https://api.unsplash.com/photos/random?client_id=ZhgmCvtObGLYrhK3MuvG8d-I7j9AAs-DNRM7zlmAtOQ&query=${place
+          .split(" ")
+          .join("+")}+landscape`
       );
 
       console.log("Ответ от Unsplash:", response.data.urls.regular);
 
       const imageUrl = response.data.urls.regular;
       setBackgroundUrl(imageUrl);
+      localStorage.setItem(`background_${place}`, imageUrl);
     } catch (error) {
       console.error("Ошибка загрузки фона:", error);
+    } finally {
+      isFetching.current = false;
     }
   };
+
+  useEffect(() => {
+    if (place) {
+      fetchBackground();
+    }
+  }, [place]);
 
   const handleClick = () => {
     if (isButtonDisabled) return;
 
     increaseCoins();
     setIsButtonDisabled(true);
-    fetchBackground();
 
     setTimeout(() => {
       setIsButtonDisabled(false);

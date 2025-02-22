@@ -21,6 +21,7 @@ function App() {
   const [countries, setCountries] = useState([]);
   const audioRef = useRef(new Audio("/sounds/background-music.mp3"));
   const [isPlaying, setIsPlaying] = useState(false);
+  const [place, setPlace] = useState(null);
 
   useEffect(() => {
     audioRef.current = new Audio("/sounds/background-music.mp3");
@@ -78,6 +79,8 @@ function App() {
         countries[Math.floor(Math.random() * countries.length)];
 
       const str = `${user.name} прибыл в страну "${randomCountry}", скопив уже ${newCoins} коинов!`;
+
+      setPlace(randomCountry);
 
       const newMessage = { name: str };
 
@@ -269,6 +272,7 @@ function App() {
               increaseCoins={increaseCoins}
               messages={messages}
               sendMessage={sendMessage}
+              place={place}
             />
           }
         ></Route>
