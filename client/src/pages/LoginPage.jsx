@@ -1,7 +1,14 @@
+import { useEffect } from "react";
 import { NavLink, useNavigate } from "react-router";
 
-export default function LoginPage({ handleLogin }) {
+export default function LoginPage({ handleLogin, user }) {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate("/main");
+    }
+  }, [user, navigate]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-kitt-background text-kitt-txt">

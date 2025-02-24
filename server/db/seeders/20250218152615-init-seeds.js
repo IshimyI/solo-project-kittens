@@ -156,6 +156,60 @@ module.exports = {
           path: "body8",
           typeId: 2,
         },
+        {
+          name: "Курточка косплей",
+          price: 10,
+          path: "body9",
+          typeId: 2,
+        },
+        {
+          name: "Шапка косплей",
+          price: 10,
+          path: "hat9",
+          typeId: 1,
+        },
+        {
+          name: "Кигуруми низ",
+          price: 10,
+          path: "body10",
+          typeId: 2,
+        },
+        {
+          name: "Кигуруми верх",
+          price: 10,
+          path: "hat10",
+          typeId: 1,
+        },
+        {
+          name: "Вязаный свитер",
+          price: 5,
+          path: "body11",
+          typeId: 2,
+        },
+        {
+          name: "Вязаная шапка",
+          price: 5,
+          path: "hat11",
+          typeId: 1,
+        },
+        {
+          name: "Вязаный шарфик",
+          price: 5,
+          path: "body12",
+          typeId: 2,
+        },
+        {
+          name: "Крутые черные очки",
+          price: 11,
+          path: "hat12",
+          typeId: 1,
+        },
+        {
+          name: "Деловой монокль",
+          price: 5,
+          path: "hat13",
+          typeId: 1,
+        },
       ],
       {}
     );

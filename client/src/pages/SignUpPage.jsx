@@ -1,7 +1,15 @@
-import React from "react";
-import { NavLink } from "react-router";
+import React, { useEffect } from "react";
+import { NavLink, useNavigate } from "react-router";
 
-export default function SignUpPage({ handleSignUp }) {
+export default function SignUpPage({ handleSignUp, user }) {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate("/main");
+    }
+  }, [user, navigate]);
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-kitt-background text-kitt-txt">
       <form

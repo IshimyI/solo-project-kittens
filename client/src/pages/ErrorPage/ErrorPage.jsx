@@ -1,3 +1,5 @@
+import { NavLink } from "react-router";
+
 export default function ErrorPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-kitt-background text-kitt-txt">
@@ -6,12 +8,15 @@ export default function ErrorPage() {
         <h1 className="text-4xl font-bold mb-4 text-white">
           Упс, похоже куда-то не туда завело путешествие
         </h1>
-        <p className="text-xl text-kitt-secondary">
+        <p className="text-xl text-kitt-secondary m-4">
           Ничего страшного, скоро получится точно!
         </p>
-        <button className="mt-6 px-6 py-2 text-white bg-kitt-primary rounded-lg hover:bg-kitt-secondary transition duration-300">
+        <NavLink
+          className="mt-6 px-6 py-2 text-white bg-kitt-primary rounded-lg hover:bg-kitt-secondary transition duration-300"
+          to="/main"
+        >
           Вернуться на главную
-        </button>
+        </NavLink>
       </div>
     </div>
   );

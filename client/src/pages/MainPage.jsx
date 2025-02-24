@@ -22,35 +22,35 @@ export default function MainPage({
 
   const navigate = useNavigate();
 
-  const fetchBackground = async () => {
-    if (isFetching.current) return;
-    isFetching.current = true;
-
+  useEffect(() => {
     const savedBackground = localStorage.getItem(`background_${place}`);
     if (savedBackground) {
       setBackgroundUrl(savedBackground);
-      isFetching.current = false;
-      return;
+    } else if (place) {
+      fetchBackground(place);
     }
+  }, [place]);
+
+  const fetchBackground = async (location) => {
+    if (isFetching.current) return;
+    isFetching.current = true;
 
     try {
       const response = await axios.get(
-        `https://api.unsplash.com/photos/random?client_id=ZhgmCvtObGLYrhK3MuvG8d-I7j9AAs-DNRM7zlmAtOQ&query=${place
+        `https://api.unsplash.com/photos/random?client_id=ZhgmCvtObGLYrhK3MuvG8d-I7j9AAs-DNRM7zlmAtOQ&query=${location
           .split(" ")
           .join("+")}+landscape`
       );
-
       console.log(
-        `https://api.unsplash.com/photos/random?client_id=ZhgmCvtObGLYrhK3MuvG8d-I7j9AAs-DNRM7zlmAtOQ&query=${place
+        `https://api.unsplash.com/photos/random?client_id=ZhgmCvtObGLYrhK3MuvG8d-I7j9AAs-DNRM7zlmAtOQ&query=${location
           .split(" ")
           .join("+")}+landscape`
       );
-
-      console.log("Ответ от Unsplash:", response.data.urls.regular);
 
       const imageUrl = response.data.urls.regular;
       setBackgroundUrl(imageUrl);
-      localStorage.setItem(`background_${place}`, imageUrl);
+      localStorage.setItem(`background_${location}`, imageUrl);
+      localStorage.setItem("background_last", imageUrl);
     } catch (error) {
       console.error("Ошибка загрузки фона:", error);
     } finally {
@@ -58,14 +58,21 @@ export default function MainPage({
     }
   };
 
-  useEffect(() => {
-    if (place) {
-      fetchBackground();
-    }
-  }, [place]);
-
   const handleClick = () => {
     if (isButtonDisabled) return;
+
+    const backgroundKeys = Object.keys(localStorage).filter((key) =>
+      key.startsWith("background_")
+    );
+
+    if (backgroundKeys.length > 3) {
+      backgroundKeys
+        .sort((a, b) =>
+          localStorage.getItem(b).localeCompare(localStorage.getItem(a))
+        )
+        .slice(3)
+        .forEach((key) => localStorage.removeItem(key));
+    }
 
     increaseCoins();
     setIsButtonDisabled(true);
@@ -106,17 +113,10 @@ export default function MainPage({
     fetchSelectedItems();
   }, [user]);
 
-  useEffect(() => {
-    if (!user) {
-      navigate("/login");
-    }
-  }, [user, navigate]);
-
   if (!user) {
     return <p>Загрузка...</p>;
   }
 
-  if (!user) return <p className="text-center text-xl mt-10">Загрузка...</p>;
   if (isLoading)
     return <p className="text-center text-xl mt-10">Загрузка гардероба...</p>;
 
