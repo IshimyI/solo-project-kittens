@@ -1,14 +1,14 @@
+import { useEffect, useRef, useState } from "react";
 import { Routes, Route } from "react-router";
+import { useNavigate } from "react-router-dom";
+import axiosInstance, { setAccessToken } from "./axiosInstance";
 import MainPage from "./pages/MainPage";
 import ProfilePage from "./pages/ProfilePage";
 import ShopPage from "./pages/ShopPage";
-import ErrorPage from "./pages/ErrorPage/ErrorPage";
 import SignUpPage from "./pages/SignUpPage";
-import Layout from "./ui/Layout";
-import axiosInstance, { setAccessToken } from "./axiosInstance";
-import { useEffect, useRef, useState } from "react";
 import LoginPage from "./pages/LoginPage";
-import { useNavigate } from "react-router-dom";
+import ErrorPage from "./pages/ErrorPage/ErrorPage";
+import Layout from "./ui/Layout";
 
 function App() {
   const [user, setUser] = useState();
@@ -79,9 +79,7 @@ function App() {
         countries[Math.floor(Math.random() * countries.length)];
 
       const str = `${user.name} прибыл в страну "${randomCountry}", скопив уже ${newCoins} коинов!`;
-
       setPlace(randomCountry);
-
       const newMessage = { name: str };
 
       setMessages((prevMessages) => {
@@ -288,11 +286,11 @@ function App() {
         ></Route>
         <Route
           path="/signup"
-          element={<SignUpPage handleSignUp={handleSignUp} />}
+          element={<SignUpPage handleSignUp={handleSignUp} user={user} />}
         ></Route>
         <Route
           path="/login"
-          element={<LoginPage handleLogin={handleLogin} />}
+          element={<LoginPage handleLogin={handleLogin} user={user} />}
         ></Route>
         <Route path="*" element={<ErrorPage />}></Route>
       </Route>
