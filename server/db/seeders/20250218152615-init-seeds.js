@@ -210,6 +210,18 @@ module.exports = {
           path: "hat13",
           typeId: 1,
         },
+        {
+          name: "Маска чумного доктора",
+          price: 10,
+          path: "hat14",
+          typeId: 1,
+        },
+        {
+          name: "Офисная рубашка",
+          price: 5,
+          path: "body13",
+          typeId: 2,
+        },
       ],
       {}
     );
