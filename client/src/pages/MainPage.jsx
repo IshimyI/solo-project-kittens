@@ -1,62 +1,106 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axiosInstance from "../axiosInstance";
 import axios from "axios";
 
 export default function MainPage({
   user,
   increaseCoins,
+  travelToNextPlace,
   messages,
-  sendMessage,
   place,
+  nextPlace,
+  selectedHat,
+  selectedBody,
+  selectedCoat,
+  equipmentLoaded,
 }) {
-  const [selectedHat, setSelectedHat] = useState(null);
-  const [selectedBody, setSelectedBody] = useState(null);
-  const [selectedCoat, setSelectedCoat] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const [backgroundUrl, setBackgroundUrl] = useState(
-    "/imgs/default-background.jpg"
+    () => localStorage.getItem("background_last") || "/imgs/default-background.jpg"
   );
-  const isFetching = useRef(false);
+  // countryNameEn -> Promise<string|null>, общий для текущего показа и
+  // фоновой предзагрузки, чтобы никто не "терял" уже идущий запрос.
+  const inFlight = useRef(new Map());
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const savedBackground = localStorage.getItem(`background_${place}`);
-    if (savedBackground) {
-      setBackgroundUrl(savedBackground);
-    } else if (place) {
-      fetchBackground(place);
+  const preloadImage = (url) =>
+    new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(url);
+      img.onerror = () => resolve(url);
+      img.src = url;
+    });
+
+  // Возвращает URL фона для страны: из кэша мгновенно, иначе запрашивает
+  // (переиспользуя уже идущий запрос, если он есть) и ждёт, пока картинка
+  // реально не будет декодирована браузером — только тогда résolve.
+  const getBackgroundUrl = (countryNameEn) => {
+    const cacheKey = `background_${countryNameEn}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) return Promise.resolve(cached);
+
+    if (inFlight.current.has(countryNameEn)) {
+      return inFlight.current.get(countryNameEn);
     }
+
+    const promise = (async () => {
+      try {
+        // Запрос всегда идёт по английскому названию страны — так поиск
+        // Unsplash куда надёжнее находит фото, которые реально
+        // соответствуют стране. Личный ключ (не общий демо-ключ) — свой
+        // лимит 50 запросов/час, плюс жёсткий таймаут.
+        const query = encodeURIComponent(`${countryNameEn} landmark`);
+        const response = await axios.get(
+          `https://api.unsplash.com/photos/random?client_id=${
+            import.meta.env.VITE_UNSPLASH_ACCESS_KEY
+          }&query=${query}&orientation=landscape`,
+          { timeout: 4000 }
+        );
+
+        const imageUrl = response.data.urls.regular;
+        await preloadImage(imageUrl);
+        localStorage.setItem(cacheKey, imageUrl);
+        localStorage.setItem("background_last", imageUrl);
+        return imageUrl;
+      } catch (error) {
+        console.error("Ошибка загрузки фона:", error.message);
+        return null;
+      } finally {
+        inFlight.current.delete(countryNameEn);
+      }
+    })();
+
+    inFlight.current.set(countryNameEn, promise);
+    return promise;
+  };
+
+  // Фон текущего места — если он уже был предзагружен заранее (см. ниже),
+  // подставляется мгновенно из кэша, без похода в сеть.
+  useEffect(() => {
+    if (!place?.en) return;
+    let cancelled = false;
+
+    getBackgroundUrl(place.en).then((imageUrl) => {
+      if (cancelled) return;
+      if (imageUrl) {
+        setBackgroundUrl(imageUrl);
+      } else {
+        const lastGoodBackground = localStorage.getItem("background_last");
+        if (lastGoodBackground) setBackgroundUrl(lastGoodBackground);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [place]);
 
-  const fetchBackground = async (location) => {
-    if (isFetching.current) return;
-    isFetching.current = true;
-
-    try {
-      const response = await axios.get(
-        `https://api.unsplash.com/photos/random?client_id=ZhgmCvtObGLYrhK3MuvG8d-I7j9AAs-DNRM7zlmAtOQ&query=${location
-          .split(" ")
-          .join("+")}+landscape`
-      );
-      console.log(
-        `https://api.unsplash.com/photos/random?client_id=ZhgmCvtObGLYrhK3MuvG8d-I7j9AAs-DNRM7zlmAtOQ&query=${location
-          .split(" ")
-          .join("+")}+landscape`
-      );
-
-      const imageUrl = response.data.urls.regular;
-      setBackgroundUrl(imageUrl);
-      localStorage.setItem(`background_${location}`, imageUrl);
-      localStorage.setItem("background_last", imageUrl);
-    } catch (error) {
-      console.error("Ошибка загрузки фона:", error);
-    } finally {
-      isFetching.current = false;
-    }
-  };
+  // Тихая предзагрузка фона для СЛЕДУЮЩЕГО направления — качается в фоне,
+  // пока пользователь смотрит на текущее, и не трогает видимую картинку.
+  useEffect(() => {
+    if (nextPlace?.en) getBackgroundUrl(nextPlace.en);
+  }, [nextPlace]);
 
   const handleClick = () => {
     if (isButtonDisabled) return;
@@ -74,50 +118,23 @@ export default function MainPage({
         .forEach((key) => localStorage.removeItem(key));
     }
 
-    increaseCoins();
+    // Место назначения меняется синхронно, прямо сейчас — фон переключается
+    // мгновенно (он уже предзагружен заранее). Начисление монет и запись
+    // в журнал идут в фоне и на визуальную смену уже не влияют.
+    const destination = travelToNextPlace();
+    increaseCoins(destination);
     setIsButtonDisabled(true);
 
     setTimeout(() => {
       setIsButtonDisabled(false);
-    }, 5000);
+    }, 4000);
   };
-
-  useEffect(() => {
-    const fetchSelectedItems = async () => {
-      if (!user) return;
-
-      try {
-        const res = await axiosInstance.get("/user-selected-items", {
-          params: { userId: user.id },
-        });
-        const hat = await axiosInstance.get("/shopbypk", {
-          params: { id: res.data.hat },
-        });
-        const body = await axiosInstance.get("/shopbypk", {
-          params: { id: res.data.body },
-        });
-        const coat = await axiosInstance.get("/shopbypk", {
-          params: { id: res.data.coat },
-        });
-
-        setSelectedHat(hat.data || null);
-        setSelectedBody(body.data || null);
-        setSelectedCoat(coat.data || null);
-      } catch (error) {
-        console.error("Ошибка загрузки выбранных предметов:", error.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchSelectedItems();
-  }, [user]);
 
   if (!user) {
     return <p>Загрузка...</p>;
   }
 
-  if (isLoading)
+  if (!equipmentLoaded)
     return <p className="text-center text-xl mt-10">Загрузка гардероба...</p>;
 
   return (

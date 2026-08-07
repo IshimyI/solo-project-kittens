@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import "keen-slider/keen-slider.min.css";
-import axiosInstance from "../axiosInstance";
 import { useNavigate } from "react-router";
 
-export default function ProfilePage({ user, boughtProducts }) {
-  const [wardrobe, setWardrobe] = useState({ hat: [], body: [], coat: [] });
-  const [selectedHat, setSelectedHat] = useState(null);
-  const [selectedBody, setSelectedBody] = useState(null);
-  const [selectedCoat, setSelectedCoat] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+export default function ProfilePage({
+  user,
+  boughtProducts,
+  selectedHat,
+  selectedBody,
+  selectedCoat,
+  equipmentLoaded,
+  equipItem,
+}) {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,117 +19,35 @@ export default function ProfilePage({ user, boughtProducts }) {
     }
   }, [user, navigate]);
 
-  useEffect(() => {
-    const fetchBoughtProducts = async () => {
-      try {
-        const res = await axiosInstance.get("/inventory", {
-          params: { userId: user.id },
-        });
+  // Группируем уже загруженный на уровне App список купленных вещей —
+  // без отдельного похода в сеть при каждом заходе в гардероб.
+  const wardrobe = {
+    hat: boughtProducts
+      .filter((item) => item.Shop && item.Shop.typeId === 1)
+      .sort((a, b) => a.Shop.id - b.Shop.id),
+    body: boughtProducts
+      .filter((item) => item.Shop && item.Shop.typeId === 2)
+      .sort((a, b) => a.Shop.id - b.Shop.id),
+    coat: boughtProducts
+      .filter((item) => item.Shop && item.Shop.typeId === 3)
+      .sort((a, b) => a.Shop.id - b.Shop.id),
+  };
 
-        const validData = res.data.filter(
-          (item) => item && item.Shop && item.Shop.typeId
-        );
+  const isLoading = !equipmentLoaded;
 
-        const filteredData = res.data
-          .filter((item) => item.User.id === user.id)
-          .sort((a, b) => a.Shop.id - b.Shop.id);
-
-        const groupedProducts = {
-          hat: filteredData.filter(
-            (item) => item.Shop && item.Shop.typeId === 1
-          ),
-          body: filteredData.filter(
-            (item) => item.Shop && item.Shop.typeId === 2
-          ),
-          coat: filteredData.filter(
-            (item) => item.Shop && item.Shop.typeId === 3
-          ),
-        };
-
-        setWardrobe(groupedProducts);
-      } catch (error) {
-        console.error("Ошибка загрузки гардероба:", error.message);
-      }
-    };
-
-    fetchBoughtProducts();
-  }, [user]);
-
-  useEffect(() => {
-    const fetchSelectedItems = async () => {
-      if (!user) return;
-
-      try {
-        const res = await axiosInstance.get("/user-selected-items", {
-          params: { userId: user.id },
-        });
-
-        setSelectedHat(
-          wardrobe.hat.find((item) => item.Shop.id === res.data.hat) ||
-            wardrobe.hat[0]
-        );
-        setSelectedBody(
-          wardrobe.body.find((item) => item.Shop.id === res.data.body) ||
-            wardrobe.body[0]
-        );
-        setSelectedCoat(
-          wardrobe.coat.find((item) => item.Shop.id === res.data.coat) ||
-            wardrobe.coat[0]
-        );
-      } catch (error) {
-        console.error("Ошибка загрузки выбранных предметов:", error.message);
-
-        if (wardrobe.hat.length) setSelectedHat(wardrobe.hat[0]);
-        if (wardrobe.body.length) setSelectedBody(wardrobe.body[0]);
-        if (wardrobe.coat.length) setSelectedCoat(wardrobe.coat[0]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchSelectedItems();
-  }, [wardrobe, user]);
-
-  useEffect(() => {
-    const updateSelectedItems = async () => {
-      if (!user || !selectedHat || !selectedBody || !selectedCoat) return;
-
-      try {
-        await axiosInstance.put("/user-selected-items", {
-          userId: user.id,
-          selectedItems: {
-            hat: selectedHat.Shop.id,
-            body: selectedBody.Shop.id,
-            coat: selectedCoat.Shop.id,
-          },
-        });
-        console.log(
-          await axiosInstance.get(`/user-selected-items?userId=${user.id}`)
-        );
-      } catch (error) {
-        console.error(
-          "Ошибка при обновлении выбранных элементов:",
-          error.message
-        );
-      }
-    };
-
-    updateSelectedItems();
-  }, [selectedHat, selectedBody, selectedCoat, user]);
-
-  const getAdjacentItems = (array, selectedItem) => {
-    if (!selectedItem?.Shop)
+  const getAdjacentItems = (array, selectedShopItem) => {
+    if (!selectedShopItem)
       return { previous: null, current: null, next: null };
 
     const index = array.findIndex(
-      (item) => item.Shop?.id === selectedItem.Shop?.id
+      (item) => item.Shop?.id === selectedShopItem.id
     );
     if (index === -1) return { previous: null, current: null, next: null };
 
     const previous = array[(index - 1 + array.length) % array.length] || null;
     const next = array[(index + 1) % array.length] || null;
 
-    return { previous, current: selectedItem, next };
+    return { previous, current: selectedShopItem, next };
   };
 
   if (!user) return <p className="text-center text-xl mt-10">Загрузка...</p>;
@@ -155,24 +75,24 @@ export default function ProfilePage({ user, boughtProducts }) {
       >
         <div className="mt-10 w-80 flex flex-col items-center">
           <div className="relative w-200 h-200 mt-6">
-            {selectedCoat?.Shop && (
+            {selectedCoat && (
               <img
-                src={`/imgs/${selectedCoat.Shop.path}.png`}
-                alt={selectedCoat.Shop.name || "Нет имени"}
+                src={`/imgs/${selectedCoat.path}.png`}
+                alt={selectedCoat.name || "Нет имени"}
                 className="absolute w-full z-[10]"
               />
             )}
-            {selectedBody?.Shop && (
+            {selectedBody && (
               <img
-                src={`/imgs/${selectedBody.Shop.path}.png`}
-                alt={selectedBody.Shop.name || "Нет имени"}
+                src={`/imgs/${selectedBody.path}.png`}
+                alt={selectedBody.name || "Нет имени"}
                 className="absolute w-full z-[30]"
               />
             )}
-            {selectedHat?.Shop && (
+            {selectedHat && (
               <img
-                src={`/imgs/${selectedHat.Shop.path}.png`}
-                alt={selectedHat.Shop.name || "Нет имени"}
+                src={`/imgs/${selectedHat.path}.png`}
+                alt={selectedHat.name || "Нет имени"}
                 className="absolute w-full z-[30]"
               />
             )}
@@ -180,22 +100,17 @@ export default function ProfilePage({ user, boughtProducts }) {
         </div>
         <div className="flex flex-col">
           {[
-            { category: "hat", selected: selectedHat, set: setSelectedHat },
-            { category: "body", selected: selectedBody, set: setSelectedBody },
-            { category: "coat", selected: selectedCoat, set: setSelectedCoat },
-          ].map(({ category, selected, set }, index) => {
+            { category: "hat", selected: selectedHat },
+            { category: "body", selected: selectedBody },
+            { category: "coat", selected: selectedCoat },
+          ].map(({ category, selected }, index) => {
             const { previous, current, next } = getAdjacentItems(
               wardrobe[category],
               selected
             );
             return previous && next ? (
               <div key={index} className="flex items-center space-x-4 ">
-                <button
-                  onClick={() => {
-                    console.log("Setting previous:", previous);
-                    set(previous);
-                  }}
-                >
+                <button onClick={() => equipItem(category, previous.Shop)}>
                   <img
                     src={`/imgs/${previous.Shop.path}.png`}
                     alt={previous.Shop.name}
@@ -203,16 +118,11 @@ export default function ProfilePage({ user, boughtProducts }) {
                   />
                 </button>
                 <img
-                  src={`/imgs/${current.Shop.path}.png`}
-                  alt={current.Shop.name}
+                  src={`/imgs/${current.path}.png`}
+                  alt={current.name}
                   className="w-60 h-60"
                 />
-                <button
-                  onClick={() => {
-                    console.log("Setting next:", next);
-                    set(next);
-                  }}
-                >
+                <button onClick={() => equipItem(category, next.Shop)}>
                   <img
                     src={`/imgs/${next.Shop.path}.png`}
                     alt={next.Shop.name}
