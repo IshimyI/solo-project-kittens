@@ -9,6 +9,7 @@ import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
 import ErrorPage from "./pages/ErrorPage/ErrorPage";
 import Layout from "./ui/Layout";
+import { COUNTRIES } from "./data/countries";
 
 function App() {
   const [user, setUser] = useState();
@@ -18,10 +19,29 @@ function App() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [messages, setMessages] = useState([]);
   const navigate = useNavigate();
-  const [countries, setCountries] = useState([]);
+  const [countries] = useState(COUNTRIES);
   const audioRef = useRef(new Audio("/sounds/background-music.mp3"));
   const [isPlaying, setIsPlaying] = useState(false);
   const [place, setPlace] = useState(null);
+  // Экипировка (шляпа/тело/пальто) хранится тут, а не в самих страницах —
+  // грузится один раз при входе и не пропадает при переходах между
+  // /main и /profile, поэтому навигация между ними мгновенная.
+  const [selectedHat, setSelectedHat] = useState(null);
+  const [selectedBody, setSelectedBody] = useState(null);
+  const [selectedCoat, setSelectedCoat] = useState(null);
+  const [equipmentLoaded, setEquipmentLoaded] = useState(false);
+  // Следующее направление выбирается заранее, чтобы MainPage успел
+  // предзагрузить его фон в фоне — при клике переключение мгновенное,
+  // без паузы на загрузку.
+  const [nextPlace, setNextPlace] = useState(null);
+
+  const pickRandomCountry = () =>
+    countries[Math.floor(Math.random() * countries.length)];
+
+  useEffect(() => {
+    setNextPlace(pickRandomCountry());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     audioRef.current = new Audio("/sounds/background-music.mp3");
@@ -51,35 +71,21 @@ function App() {
     setIsPlaying(!isPlaying);
   };
 
-  useEffect(() => {
-    const fetchCountries = async () => {
-      try {
-        const response = await fetch("https://restcountries.com/v3.1/all");
-        const data = await response.json();
-        const countryList = data.map(
-          (country) => country.translations.rus.common
-        );
-        setCountries(countryList);
-      } catch (error) {
-        console.error("Ошибка загрузки стран:", error);
-      }
-    };
+  // Синхронно переключает место назначения на уже предзагруженное
+  // nextPlace — вызывается прямо по клику, без ожидания сети, поэтому
+  // фон меняется сразу в начале анимации, а не когда-то потом.
+  const travelToNextPlace = () => {
+    const destination = nextPlace || pickRandomCountry();
+    setPlace(destination);
+    // Сразу намечаем следующее направление — MainPage начнёт тихо
+    // подгружать его фон на все 4 секунды текущей анимации.
+    setNextPlace(pickRandomCountry());
+    return destination;
+  };
 
-    fetchCountries();
-  }, []);
-
-  const sendMessage = async (newCoins) => {
+  const sendMessage = async (newCoins, destination) => {
     try {
-      if (countries.length === 0) {
-        console.warn("Список стран ещё не загружен.");
-        return;
-      }
-
-      const randomCountry =
-        countries[Math.floor(Math.random() * countries.length)];
-
-      const str = `${user.name} прибыл в страну "${randomCountry}", скопив уже ${newCoins} коинов!`;
-      setPlace(randomCountry);
+      const str = `${user.name} прибыл в страну "${destination.ru}", скопив уже ${newCoins} коинов!`;
       const newMessage = { name: str };
 
       setMessages((prevMessages) => {
@@ -117,7 +123,7 @@ function App() {
     }
   }, []);
 
-  const increaseCoins = async () => {
+  const increaseCoins = async (destination) => {
     try {
       const res = await axiosInstance.post("/coins/increase", {
         userId: user.id,
@@ -126,7 +132,7 @@ function App() {
 
       setUser((prevUser) => ({ ...prevUser, coins: newCoins }));
 
-      await sendMessage(newCoins);
+      await sendMessage(newCoins, destination);
     } catch (error) {
       console.error("Ошибка при увеличении коинов", error);
     }
@@ -157,6 +163,32 @@ function App() {
     } catch (error) {
       console.error("Ошибка при покупке", error);
     }
+  };
+
+  // Экипировка предмета: обновляем состояние сразу (оптимистично, без
+  // повторной загрузки со страницы), запрос на сервер уходит в фоне.
+  // item — плоский объект товара (та же форма, что отдаёт /shopbypk).
+  const equipItem = (category, item) => {
+    const setters = {
+      hat: setSelectedHat,
+      body: setSelectedBody,
+      coat: setSelectedCoat,
+    };
+    setters[category]?.(item);
+
+    const hatId = category === "hat" ? item?.id : selectedHat?.id;
+    const bodyId = category === "body" ? item?.id : selectedBody?.id;
+    const coatId = category === "coat" ? item?.id : selectedCoat?.id;
+    if (!hatId || !bodyId || !coatId || !user) return;
+
+    axiosInstance
+      .put("/user-selected-items", {
+        userId: user.id,
+        selectedItems: { hat: hatId, body: bodyId, coat: coatId },
+      })
+      .catch((error) =>
+        console.error("Ошибка при обновлении выбранных элементов:", error.message)
+      );
   };
 
   useEffect(() => {
@@ -195,8 +227,30 @@ function App() {
       }
     };
 
+    const fetchEquipment = async () => {
+      try {
+        const selected = await axiosInstance.get("/user-selected-items", {
+          params: { userId: user.id },
+        });
+        // Три запроса параллельно вместо последовательных — втрое быстрее.
+        const [hat, body, coat] = await Promise.all([
+          axiosInstance.get("/shopbypk", { params: { id: selected.data.hat } }),
+          axiosInstance.get("/shopbypk", { params: { id: selected.data.body } }),
+          axiosInstance.get("/shopbypk", { params: { id: selected.data.coat } }),
+        ]);
+        setSelectedHat(hat.data || null);
+        setSelectedBody(body.data || null);
+        setSelectedCoat(coat.data || null);
+      } catch (error) {
+        console.error("Ошибка загрузки выбранных предметов:", error.message);
+      } finally {
+        setEquipmentLoaded(true);
+      }
+    };
+
     fetchBoughtProducts();
     fetchMessages();
+    fetchEquipment();
 
     fetchProducts();
   }, [user]);
@@ -268,15 +322,30 @@ function App() {
             <MainPage
               user={user}
               increaseCoins={increaseCoins}
+              travelToNextPlace={travelToNextPlace}
               messages={messages}
-              sendMessage={sendMessage}
               place={place}
+              nextPlace={nextPlace}
+              selectedHat={selectedHat}
+              selectedBody={selectedBody}
+              selectedCoat={selectedCoat}
+              equipmentLoaded={equipmentLoaded}
             />
           }
         ></Route>
         <Route
           path="/profile"
-          element={<ProfilePage user={user} boughtProducts={boughtProducts} />}
+          element={
+            <ProfilePage
+              user={user}
+              boughtProducts={boughtProducts}
+              selectedHat={selectedHat}
+              selectedBody={selectedBody}
+              selectedCoat={selectedCoat}
+              equipmentLoaded={equipmentLoaded}
+              equipItem={equipItem}
+            />
+          }
         ></Route>
         <Route
           path="/shop"

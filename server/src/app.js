@@ -9,10 +9,15 @@ const authRouter = require("./routes/authRouter");
 const tokensRouter = require("./routes/tokensRouter");
 
 const app = express();
-const { PORT } = process.env || 3000;
+const PORT = process.env.PORT || 3000;
 
 const corsConfig = {
-  origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+  origin: [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://catventure.ru",
+    "https://www.catventure.ru",
+  ],
   credentials: true,
 };
 
