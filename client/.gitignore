@@ -132,3 +132,4 @@ dist
 # Other
 .idea/
 .DS_Store
+.env.production

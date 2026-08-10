@@ -1,52 +1,65 @@
 @import "tailwindcss";
 
 @theme {
-  --color-kitt-background: rgb(255, 237, 219);
-  --color-kitt-foreground: rgb(237, 205, 187);
-  --color-kitt-primary: rgb(227, 183, 160);
-  --color-kitt-secondary: rgb(191, 146, 112);
-  --color-kitt-txt: rgb(80, 80, 80);
+  --color-kitt-background: rgb(255, 244, 235);
+  --color-kitt-foreground: rgb(255, 214, 189);
+  --color-kitt-primary: rgb(230, 92, 71);
+  --color-kitt-secondary: rgb(32, 145, 135);
+  --color-kitt-txt: rgb(74, 52, 46);
+}
+
+.journal-mount {
+  animation: journal-in 0.4s ease-out;
+}
+@keyframes journal-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .swing {
-  animation: travel-hop 1.2s ease-in-out infinite;
+  animation: travel-hop 1s ease-in-out infinite;
   transform-origin: center bottom;
   position: relative;
   top: -200px;
 }
 
+/* На телефонах фиксированные -200px поднимали кота меньше, чем нужно (он
+   оказывался даже ниже состояния покоя) — здесь поднимаем в vh, примерно
+   до середины экрана, независимо от высоты вьюпорта. Десктоп не трогаем. */
+@media (max-width: 767px) {
+  .swing {
+    top: -30vh;
+  }
+}
+
+/* Прыжки из стороны в сторону — основное движение, лёгкий наклон
+   (как отголосок маятника) добавлен только штрихом, без резких поворотов. */
 @keyframes travel-hop {
   0% {
-    transform: translate(0, 0) rotate(-6deg) scale(1);
+    transform: translate(0, 0) rotate(-3deg);
   }
-  10% {
-    transform: translate(-22px, -14px) rotate(-2deg) scale(1.02);
-  }
-  20% {
-    transform: translate(-45px, -38px) rotate(8deg) scale(1.09);
+  15% {
+    transform: translate(-60px, -42px) rotate(-1deg);
   }
   30% {
-    transform: translate(-64px, -14px) rotate(-6deg) scale(1.02);
-  }
-  40% {
-    transform: translate(-45px, 8px) rotate(-14deg) scale(0.93);
+    transform: translate(-116px, 0) rotate(-4deg);
   }
   50% {
-    transform: translate(0, 0) rotate(0deg) scale(1);
+    transform: translate(0, 2px) rotate(0deg);
   }
-  60% {
-    transform: translate(45px, 8px) rotate(14deg) scale(0.93);
-  }
-  70% {
-    transform: translate(64px, -14px) rotate(6deg) scale(1.02);
+  65% {
+    transform: translate(60px, -42px) rotate(1deg);
   }
   80% {
-    transform: translate(45px, -38px) rotate(-8deg) scale(1.09);
-  }
-  90% {
-    transform: translate(22px, -14px) rotate(2deg) scale(1.02);
+    transform: translate(116px, 0) rotate(4deg);
   }
   100% {
-    transform: translate(0, 0) rotate(-6deg) scale(1);
+    transform: translate(0, 0) rotate(-3deg);
   }
 }

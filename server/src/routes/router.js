@@ -74,8 +74,10 @@ router.get("/shopbypk", async (req, res) => {
 
 router.get("/inventory", async (req, res) => {
   try {
+    const { userId } = req.query;
     res.status(200).send(
       await Inventory.findAll({
+        where: userId ? { userId } : undefined,
         attributes: [],
         include: [
           { model: User },
