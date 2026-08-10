@@ -9,10 +9,34 @@ import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
 import ErrorPage from "./pages/ErrorPage/ErrorPage";
 import Layout from "./ui/Layout";
+import Toast from "./ui/Toast";
 import { COUNTRIES } from "./data/countries";
+
+// Базовый список нецензурных корней (рус/англ) для проверки логина при
+// регистрации — простая проверка подстрокой, без претензии на 100%
+// защиту от обхода, но отсекает явные случаи.
+const PROFANITY_PATTERNS = [
+  /хуй/i, /хуе/i, /хуя/i, /хуё/i, /пизд/i, /еба/i, /ёба/i, /ебл/i, /ебу/i,
+  /бляд/i, /блять/i, /сука/i, /мудак/i, /гандон/i, /долбоеб/i, /долбоёб/i,
+  /залуп/i, /пидор/i, /пидар/i, /fuck/i, /shit/i, /bitch/i, /asshole/i, /cunt/i,
+];
+const containsProfanity = (text) => PROFANITY_PATTERNS.some((re) => re.test(text));
 
 function App() {
   const [user, setUser] = useState();
+  // Очередь баннеров — не больше 3 одновременно, при переполнении первым
+  // (самым старым) исчезает без анимации, остальные — по своему таймеру, с
+  // плавным схлопыванием (см. Toast.jsx).
+  const [toasts, setToasts] = useState([]);
+  const showToast = (type, message) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    setToasts((prev) => {
+      const next = [...prev, { id, type, message }];
+      return next.length > 3 ? next.slice(next.length - 3) : next;
+    });
+  };
+  const dismissToast = (id) =>
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   const [products, setProducts] = useState([]);
   const [boughtProducts, setBoughtProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,8 +74,15 @@ function App() {
 
     const savedState = localStorage.getItem("musicPlaying");
     if (savedState === "true") {
-      audioRef.current.play();
-      setIsPlaying(true);
+      // Браузер блокирует автовоспроизведение без предварительного
+      // взаимодействия пользователя со страницей — ловим отказ, чтобы не
+      // падать в консоль необработанным промисом, и держим isPlaying в
+      // соответствии с реальным состоянием звука, а не с оптимистичной
+      // догадкой.
+      audioRef.current
+        .play()
+        .then(() => setIsPlaying(true))
+        .catch(() => setIsPlaying(false));
     }
 
     return () => {
@@ -65,7 +96,7 @@ function App() {
     if (isPlaying) {
       audioRef.current.pause();
     } else {
-      audioRef.current.play();
+      audioRef.current.play().catch(() => {});
     }
     localStorage.setItem("musicPlaying", !isPlaying);
     setIsPlaying(!isPlaying);
@@ -83,31 +114,43 @@ function App() {
     return destination;
   };
 
+  // Журнал общий для всех, и сервер — единственный источник правды.
+  // Раньше здесь ещё оптимистично добавляли своё сообщение локально, но
+  // это конфликтовало с фоновым опросом (сообщение мигало/пропадало/
+  // прыгало по порядку) — особенно заметно, когда путешествуют сразу
+  // несколько человек. Теперь только один путь обновления: сервер.
+  const fetchMessagesRef = useRef(() => {});
+  const fetchBoughtProductsRef = useRef(() => {});
+
   const sendMessage = async (newCoins, destination) => {
     try {
-      const str = `${user.name} прибыл в страну "${destination.ru}", скопив уже ${newCoins} коинов!`;
-      const newMessage = { name: str };
-
-      setMessages((prevMessages) => {
-        const updatedMessages = [newMessage, ...prevMessages.slice(0, 2)];
-        localStorage.setItem("messages", JSON.stringify(updatedMessages));
-        return updatedMessages;
-      });
-
+      const str = `${user.name} прибыл в страну "${destination.ru}", скопив уже ${newCoins} монет!`;
       await axiosInstance.post("/message", { name: str });
+      // Подтягиваем журнал сразу же, не дожидаясь следующего опроса —
+      // своя запись появляется мгновенно, без гонки с polling'ом.
+      fetchMessagesRef.current();
     } catch (error) {
       console.error("Ошибка при отправке сообщения", error);
     }
   };
 
+  // Показываем закэшированную копию сразу (чтобы не мигало пустым при
+  // заходе), а дальше опрашиваем сервер каждые несколько секунд — так
+  // видно и чужие путешествия из других вкладок/сессий.
   useEffect(() => {
+    const savedMessages = localStorage.getItem("messages");
+    if (savedMessages) {
+      setMessages(JSON.parse(savedMessages));
+    }
+
+    let cancelled = false;
+
     const fetchMessages = async () => {
       try {
         const res = await axiosInstance.get("/message");
-        console.log("Все сообщения:", res.data);
+        if (cancelled) return;
 
-        const latestMessages = res.data.slice(-3);
-
+        const latestMessages = res.data.slice(-5);
         setMessages(latestMessages);
         localStorage.setItem("messages", JSON.stringify(latestMessages));
       } catch (error) {
@@ -115,12 +158,14 @@ function App() {
       }
     };
 
-    const savedMessages = localStorage.getItem("messages");
-    if (savedMessages) {
-      setMessages(JSON.parse(savedMessages));
-    } else {
-      fetchMessages();
-    }
+    fetchMessagesRef.current = fetchMessages;
+    fetchMessages();
+    const intervalId = setInterval(fetchMessages, 5000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
   }, []);
 
   const increaseCoins = async (destination) => {
@@ -140,7 +185,7 @@ function App() {
 
   const buyItem = async (product) => {
     if (user.coins < product.price) {
-      alert("Недостаточно коинов!");
+      showToast("error", "Недостаточно монет!");
       return;
     }
 
@@ -159,9 +204,15 @@ function App() {
         prevProducts.filter((el) => el.id !== product.id)
       );
 
-      setBoughtProducts((prevBought) => [...prevBought, product]);
+      // Раньше сюда пушился "плоский" товар без вложенного .Shop, из-за
+      // чего гардероб на ProfilePage (ждёт item.Shop.typeId/.Shop.id) не
+      // находил только что купленную вещь ни в одном направлении карусели.
+      // Перезапрашиваем инвентарь с сервера — форма гарантированно верная.
+      await fetchBoughtProductsRef.current();
+      showToast("success", "Покупка успешно совершена!");
     } catch (error) {
       console.error("Ошибка при покупке", error);
+      showToast("error", "Не удалось совершить покупку. Попробуйте снова.");
     }
   };
 
@@ -217,16 +268,7 @@ function App() {
         console.error("Ошибка загрузки купленных товаров:", error);
       }
     };
-    const fetchMessages = async () => {
-      try {
-        const res = await axiosInstance.get("/message");
-        console.log("Новые сообщения:", res.data);
-        setMessages(res.data.slice(-3));
-      } catch (error) {
-        console.error("Ошибка загрузки сообщений:", error);
-      }
-    };
-
+    fetchBoughtProductsRef.current = fetchBoughtProducts;
     const fetchEquipment = async () => {
       try {
         const selected = await axiosInstance.get("/user-selected-items", {
@@ -249,7 +291,6 @@ function App() {
     };
 
     fetchBoughtProducts();
-    fetchMessages();
     fetchEquipment();
 
     fetchProducts();
@@ -277,10 +318,43 @@ function App() {
     e.preventDefault();
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
-    const res = await axiosInstance.post("/auth/signup", data);
-    if (res.status === 200) {
-      setUser(res.data.user);
-      setAccessToken(res.data.accessToken);
+
+    const name = (data.name || "").trim();
+    const email = (data.email || "").trim();
+    const password = data.password || "";
+
+    if (name.length < 2 || name.length > 20) {
+      showToast("error", "Логин должен быть от 2 до 20 символов.");
+      return;
+    }
+    if (!/^[a-zA-Zа-яА-ЯёЁ0-9 _-]+$/.test(name)) {
+      showToast("error", "Логин может содержать только буквы, цифры, пробел, - и _.");
+      return;
+    }
+    if (containsProfanity(name)) {
+      showToast("error", "Логин содержит недопустимые слова.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showToast("error", "Введите корректную почту.");
+      return;
+    }
+    if (password.length < 6) {
+      showToast("error", "Пароль должен быть не короче 6 символов.");
+      return;
+    }
+
+    try {
+      const res = await axiosInstance.post("/auth/signup", { name, email, password });
+      if (res.status === 200) {
+        setUser(res.data.user);
+        setAccessToken(res.data.accessToken);
+      }
+    } catch (error) {
+      showToast(
+        "error",
+        error.response?.data?.message || "Не удалось зарегистрироваться. Попробуйте снова."
+      );
     }
   };
 
@@ -288,10 +362,18 @@ function App() {
     e.preventDefault();
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
-    const res = await axiosInstance.post("/auth/login", data);
-    if (res.status === 200) {
-      setUser(res.data.user);
-      setAccessToken(res.data.accessToken);
+
+    try {
+      const res = await axiosInstance.post("/auth/login", data);
+      if (res.status === 200) {
+        setUser(res.data.user);
+        setAccessToken(res.data.accessToken);
+      }
+    } catch (error) {
+      showToast(
+        "error",
+        error.response?.data?.message || "Неверная почта или пароль."
+      );
     }
   };
 
@@ -305,7 +387,9 @@ function App() {
   };
 
   return (
-    <Routes>
+    <>
+      <Toast toasts={toasts} onDismiss={dismissToast} />
+      <Routes>
       <Route
         element={
           <Layout
@@ -350,7 +434,7 @@ function App() {
         <Route
           path="/shop"
           element={
-            <ShopPage user={user} buyItem={buyItem} products={products} />
+            <ShopPage user={user} buyItem={buyItem} products={products} loading={loading} />
           }
         ></Route>
         <Route
@@ -363,7 +447,8 @@ function App() {
         ></Route>
         <Route path="*" element={<ErrorPage />}></Route>
       </Route>
-    </Routes>
+      </Routes>
+    </>
   );
 }
 
