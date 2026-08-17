@@ -7,6 +7,7 @@ const cors = require("cors");
 const router = require("./routes/router");
 const authRouter = require("./routes/authRouter");
 const tokensRouter = require("./routes/tokensRouter");
+const verifyAccessToken = require("./middlewares/verifyAccessToken");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,9 +28,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-app.use("/api", router);
 app.use("/api/auth", authRouter);
 app.use("/api/tokens", tokensRouter);
+app.use("/api", verifyAccessToken, router);
 
 app.listen(PORT, () => {
   console.log(`Server listening on port: ${PORT}!`);
