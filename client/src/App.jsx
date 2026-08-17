@@ -170,9 +170,7 @@ function App() {
 
   const increaseCoins = async (destination) => {
     try {
-      const res = await axiosInstance.post("/coins/increase", {
-        userId: user.id,
-      });
+      const res = await axiosInstance.post("/coins/increase");
       const newCoins = res.data.coins;
 
       setUser((prevUser) => ({ ...prevUser, coins: newCoins }));
@@ -190,13 +188,7 @@ function App() {
     }
 
     try {
-      const newCoins = user.coins - product.price;
-      const res = await axiosInstance.post("/coins/set", {
-        userId: user.id,
-        newCoins,
-      });
-      await axiosInstance.post("/inventory/add", {
-        userId: user.id,
+      const res = await axiosInstance.post("/shop/buy", {
         itemId: product.id,
       });
       setUser((prevUser) => ({ ...prevUser, coins: res.data.coins }));
@@ -212,7 +204,10 @@ function App() {
       showToast("success", "Покупка успешно совершена!");
     } catch (error) {
       console.error("Ошибка при покупке", error);
-      showToast("error", "Не удалось совершить покупку. Попробуйте снова.");
+      const message =
+        error.response?.data?.message ||
+        "Не удалось совершить покупку. Попробуйте снова.";
+      showToast("error", message);
     }
   };
 
@@ -234,7 +229,6 @@ function App() {
 
     axiosInstance
       .put("/user-selected-items", {
-        userId: user.id,
         selectedItems: { hat: hatId, body: bodyId, coat: coatId },
       })
       .catch((error) =>
@@ -245,9 +239,7 @@ function App() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axiosInstance.get("/shop", {
-          params: { userId: user?.id },
-        });
+        const res = await axiosInstance.get("/shop");
         setProducts(res.data);
       } catch (error) {
         console.log("Ошибка загрузки товаров:", error.message);
@@ -260,9 +252,7 @@ function App() {
 
     const fetchBoughtProducts = async () => {
       try {
-        const res = await axiosInstance.get("/inventory", {
-          params: { userId: user.id },
-        });
+        const res = await axiosInstance.get("/inventory");
         setBoughtProducts(res.data);
       } catch (error) {
         console.error("Ошибка загрузки купленных товаров:", error);
@@ -271,9 +261,7 @@ function App() {
     fetchBoughtProductsRef.current = fetchBoughtProducts;
     const fetchEquipment = async () => {
       try {
-        const selected = await axiosInstance.get("/user-selected-items", {
-          params: { userId: user.id },
-        });
+        const selected = await axiosInstance.get("/user-selected-items");
         // Три запроса параллельно вместо последовательных — втрое быстрее.
         const [hat, body, coat] = await Promise.all([
           axiosInstance.get("/shopbypk", { params: { id: selected.data.hat } }),
