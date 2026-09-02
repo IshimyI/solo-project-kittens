@@ -27,7 +27,8 @@ tokensRouter.get("/refresh", verifyRefreshToken, async (req, res) => {
       .cookie("refreshToken", refreshToken, cookieConfig)
       .json({ accessToken, user });
   } catch (error) {
-    console.log(error.message);
+    console.error(error.message);
+    res.sendStatus(500);
   }
 });
 

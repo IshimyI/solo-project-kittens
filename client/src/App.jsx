@@ -366,11 +366,15 @@ function App() {
   };
 
   const handleLogout = async () => {
-    const res = await axiosInstance.post("/auth/logout");
-    if (res.status === 200) {
-      setUser(null);
-      setAccessToken("");
-      navigate("/login");
+    try {
+      const res = await axiosInstance.post("/auth/logout");
+      if (res.status === 200) {
+        setUser(null);
+        setAccessToken("");
+        navigate("/login");
+      }
+    } catch (error) {
+      console.error("Ошибка при выходе из аккаунта", error);
     }
   };
 
