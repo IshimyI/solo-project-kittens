@@ -12,9 +12,6 @@ import Layout from "./ui/Layout";
 import Toast from "./ui/Toast";
 import { COUNTRIES } from "./data/countries";
 
-// Базовый список нецензурных корней (рус/англ) для проверки логина при
-// регистрации — простая проверка подстрокой, без претензии на 100%
-// защиту от обхода, но отсекает явные случаи.
 const PROFANITY_PATTERNS = [
   /хуй/i, /хуе/i, /хуя/i, /хуё/i, /пизд/i, /еба/i, /ёба/i, /ебл/i, /ебу/i,
   /бляд/i, /блять/i, /сука/i, /мудак/i, /гандон/i, /долбоеб/i, /долбоёб/i,
@@ -24,9 +21,7 @@ const containsProfanity = (text) => PROFANITY_PATTERNS.some((re) => re.test(text
 
 function App() {
   const [user, setUser] = useState();
-  // Очередь баннеров — не больше 3 одновременно, при переполнении первым
-  // (самым старым) исчезает без анимации, остальные — по своему таймеру, с
-  // плавным схлопыванием (см. Toast.jsx).
+
   const [toasts, setToasts] = useState([]);
   const showToast = (type, message) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -47,16 +42,12 @@ function App() {
   const audioRef = useRef(new Audio("/sounds/background-music.mp3"));
   const [isPlaying, setIsPlaying] = useState(false);
   const [place, setPlace] = useState(null);
-  // Экипировка (шляпа/тело/пальто) хранится тут, а не в самих страницах —
-  // грузится один раз при входе и не пропадает при переходах между
-  // /main и /profile, поэтому навигация между ними мгновенная.
+
   const [selectedHat, setSelectedHat] = useState(null);
   const [selectedBody, setSelectedBody] = useState(null);
   const [selectedCoat, setSelectedCoat] = useState(null);
   const [equipmentLoaded, setEquipmentLoaded] = useState(false);
-  // Следующее направление выбирается заранее, чтобы MainPage успел
-  // предзагрузить его фон в фоне — при клике переключение мгновенное,
-  // без паузы на загрузку.
+
   const [nextPlace, setNextPlace] = useState(null);
 
   const pickRandomCountry = () =>
@@ -74,11 +65,7 @@ function App() {
 
     const savedState = localStorage.getItem("musicPlaying");
     if (savedState === "true") {
-      // Браузер блокирует автовоспроизведение без предварительного
-      // взаимодействия пользователя со страницей — ловим отказ, чтобы не
-      // падать в консоль необработанным промисом, и держим isPlaying в
-      // соответствии с реальным состоянием звука, а не с оптимистичной
-      // догадкой.
+
       audioRef.current
         .play()
         .then(() => setIsPlaying(true))
@@ -102,23 +89,14 @@ function App() {
     setIsPlaying(!isPlaying);
   };
 
-  // Синхронно переключает место назначения на уже предзагруженное
-  // nextPlace — вызывается прямо по клику, без ожидания сети, поэтому
-  // фон меняется сразу в начале анимации, а не когда-то потом.
   const travelToNextPlace = () => {
     const destination = nextPlace || pickRandomCountry();
     setPlace(destination);
-    // Сразу намечаем следующее направление — MainPage начнёт тихо
-    // подгружать его фон на все 4 секунды текущей анимации.
+
     setNextPlace(pickRandomCountry());
     return destination;
   };
 
-  // Журнал общий для всех, и сервер — единственный источник правды.
-  // Раньше здесь ещё оптимистично добавляли своё сообщение локально, но
-  // это конфликтовало с фоновым опросом (сообщение мигало/пропадало/
-  // прыгало по порядку) — особенно заметно, когда путешествуют сразу
-  // несколько человек. Теперь только один путь обновления: сервер.
   const fetchMessagesRef = useRef(() => {});
   const fetchBoughtProductsRef = useRef(() => {});
 
@@ -126,17 +104,13 @@ function App() {
     try {
       const str = `${user.name} прибыл в страну "${destination.ru}", скопив уже ${newCoins} монет!`;
       await axiosInstance.post("/message", { name: str });
-      // Подтягиваем журнал сразу же, не дожидаясь следующего опроса —
-      // своя запись появляется мгновенно, без гонки с polling'ом.
+
       fetchMessagesRef.current();
     } catch (error) {
       console.error("Ошибка при отправке сообщения", error);
     }
   };
 
-  // Показываем закэшированную копию сразу (чтобы не мигало пустым при
-  // заходе), а дальше опрашиваем сервер каждые несколько секунд — так
-  // видно и чужие путешествия из других вкладок/сессий.
   useEffect(() => {
     const savedMessages = localStorage.getItem("messages");
     if (savedMessages) {
@@ -196,10 +170,6 @@ function App() {
         prevProducts.filter((el) => el.id !== product.id)
       );
 
-      // Раньше сюда пушился "плоский" товар без вложенного .Shop, из-за
-      // чего гардероб на ProfilePage (ждёт item.Shop.typeId/.Shop.id) не
-      // находил только что купленную вещь ни в одном направлении карусели.
-      // Перезапрашиваем инвентарь с сервера — форма гарантированно верная.
       await fetchBoughtProductsRef.current();
       showToast("success", "Покупка успешно совершена!");
     } catch (error) {
@@ -211,9 +181,6 @@ function App() {
     }
   };
 
-  // Экипировка предмета: обновляем состояние сразу (оптимистично, без
-  // повторной загрузки со страницы), запрос на сервер уходит в фоне.
-  // item — плоский объект товара (та же форма, что отдаёт /shopbypk).
   const equipItem = (category, item) => {
     const setters = {
       hat: setSelectedHat,
@@ -262,7 +229,7 @@ function App() {
     const fetchEquipment = async () => {
       try {
         const selected = await axiosInstance.get("/user-selected-items");
-        // Три запроса параллельно вместо последовательных — втрое быстрее.
+
         const [hat, body, coat] = await Promise.all([
           axiosInstance.get("/shopbypk", { params: { id: selected.data.hat } }),
           axiosInstance.get("/shopbypk", { params: { id: selected.data.body } }),

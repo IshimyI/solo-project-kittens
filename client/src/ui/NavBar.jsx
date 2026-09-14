@@ -101,8 +101,8 @@ export default function NavBar({ user, handleLogout, toggleMusic, isPlaying }) {
 
   return (
     <div className="bg-gradient-to-r from-kitt-background to-kitt-primary rounded-lg shadow-lg ring-1 ring-white/10">
-      {/* Компактный хедер на маленьких экранах — бренд слева и
-          анимированный бургер справа, вместо пяти растянутых кнопок. */}
+      {
+}
       <div className="flex sm:hidden items-center justify-between p-4">
         <Brand />
         <button
@@ -128,8 +128,8 @@ export default function NavBar({ user, handleLogout, toggleMusic, isPlaying }) {
         </button>
       </div>
 
-      {/* Единая выпадающая карточка-меню, плавно раскрывающаяся по высоте —
-          строки в столбик с svg-иконками и тонкими разделителями. */}
+      {
+}
       <div
         className={`sm:hidden overflow-hidden transition-all duration-300 ease-in-out ${
           menuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
@@ -174,8 +174,8 @@ export default function NavBar({ user, handleLogout, toggleMusic, isPlaying }) {
         </div>
       </div>
 
-      {/* Обычная раскладка в ряд на широких экранах — бренд слева, ссылки
-          справа. */}
+      {
+}
       <div className="hidden sm:flex flex-row items-center justify-between p-4">
         <Brand />
         <div className="flex flex-row items-center flex-wrap justify-end">

@@ -2,11 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-// Записи журнала вида '...скопив уже 100 коинов!' — подставляем иконку
-// монеты прямо рядом с числом вместо голого текста.
 function renderMessageWithCoinIcon(text) {
-  // Матчим и старое "коинов", и новое "монет" — старые записи в БД ещё
-  // хранят прежнее слово, но показываем всегда единообразно "монет".
+
   const match = text.match(/(\d+)(\s*(?:коинов|монет))/);
   if (!match) return text;
 
@@ -30,8 +27,6 @@ function renderMessageWithCoinIcon(text) {
   );
 }
 
-// На мобильных (< sm, 640px) журнал показывает меньше записей — на
-// десктопе поведение прежнее.
 const JOURNAL_VISIBLE_COUNT_DESKTOP = 5;
 const JOURNAL_VISIBLE_COUNT_MOBILE = 2;
 
@@ -63,9 +58,6 @@ export default function MainPage({
     ? JOURNAL_VISIBLE_COUNT_MOBILE
     : JOURNAL_VISIBLE_COUNT_DESKTOP;
 
-  // Просто последние JOURNAL_VISIBLE_COUNT записей — без обрезки текста и
-  // без точной покадровой сдвижки (та требовала фиксированной высоты
-  // строки, из-за чего длинные сообщения обрезались).
   const displayMessages = messages.slice(-JOURNAL_VISIBLE_COUNT);
   const lastMessageKeyRef = useRef(null);
   const newestKey =
@@ -80,8 +72,7 @@ export default function MainPage({
   const [backgroundUrl, setBackgroundUrl] = useState(
     () => localStorage.getItem("background_last") || "/imgs/default-background.jpg"
   );
-  // countryNameEn -> Promise<string|null>, общий для текущего показа и
-  // фоновой предзагрузки, чтобы никто не "терял" уже идущий запрос.
+
   const inFlight = useRef(new Map());
 
   const navigate = useNavigate();
@@ -100,9 +91,6 @@ export default function MainPage({
       img.src = url;
     });
 
-  // Возвращает URL фона для страны: из кэша мгновенно, иначе запрашивает
-  // (переиспользуя уже идущий запрос, если он есть) и ждёт, пока картинка
-  // реально не будет декодирована браузером — только тогда résolve.
   const getBackgroundUrl = (countryNameEn) => {
     const cacheKey = `background_${countryNameEn}`;
     const cached = localStorage.getItem(cacheKey);
@@ -114,10 +102,7 @@ export default function MainPage({
 
     const promise = (async () => {
       try {
-        // Запрос всегда идёт по английскому названию страны — так поиск
-        // Unsplash куда надёжнее находит фото, которые реально
-        // соответствуют стране. Личный ключ (не общий демо-ключ) — свой
-        // лимит 50 запросов/час, плюс жёсткий таймаут.
+
         const query = encodeURIComponent(`${countryNameEn} landmark`);
         const response = await axios.get(
           `https://api.unsplash.com/photos/random?client_id=${
@@ -143,8 +128,6 @@ export default function MainPage({
     return promise;
   };
 
-  // Фон текущего места — если он уже был предзагружен заранее (см. ниже),
-  // подставляется мгновенно из кэша, без похода в сеть.
   useEffect(() => {
     if (!place?.en) return;
     let cancelled = false;
@@ -164,8 +147,6 @@ export default function MainPage({
     };
   }, [place]);
 
-  // Тихая предзагрузка фона для СЛЕДУЮЩЕГО направления — качается в фоне,
-  // пока пользователь смотрит на текущее, и не трогает видимую картинку.
   useEffect(() => {
     if (nextPlace?.en) getBackgroundUrl(nextPlace.en);
   }, [nextPlace]);
@@ -173,11 +154,6 @@ export default function MainPage({
   const handleClick = () => {
     if (isButtonDisabled) return;
 
-    // Кэш только что предзагруженного nextPlace нельзя трогать — он вот-вот
-    // понадобится для мгновенного переключения фона. Раньше чистка ниже
-    // сортировала ключи по алфавиту URL-адреса (а не по актуальности) и
-    // могла случайно удалить именно его прямо перед переходом — из-за
-    // этого подгрузка "работала через раз".
     const protectedKeys = new Set(
       [place?.en, nextPlace?.en]
         .filter(Boolean)
@@ -197,9 +173,6 @@ export default function MainPage({
         .forEach((key) => localStorage.removeItem(key));
     }
 
-    // Место назначения меняется синхронно, прямо сейчас — фон переключается
-    // мгновенно (он уже предзагружен заранее). Начисление монет и запись
-    // в журнал идут в фоне и на визуальную смену уже не влияют.
     const destination = travelToNextPlace();
     increaseCoins(destination);
     setIsButtonDisabled(true);
@@ -232,9 +205,9 @@ export default function MainPage({
           Путешествие начинается здесь
         </h1>
 
-        {/* С 640px кнопка+монеты и журнал идут в один ряд: кнопка сверху,
-            монеты под ней, журнал — рядом. До 640px — прежнее поведение
-            (кнопка+монеты в строку, журнал отдельно абсолютным блоком). */}
+        {
+
+}
         <div className="flex flex-row sm:items-start items-center gap-2 sm:gap-6">
           <div className="flex flex-row sm:flex-col items-center gap-2 sm:gap-3">
             <button
@@ -265,9 +238,9 @@ export default function MainPage({
             )}
           </div>
 
-          {/* Только промежуточный диапазон 640–767px — на полноценном
-              десктопе (768px+) журнал возвращается к оригинальному виду,
-              приклеенному к низу страницы (см. блок ниже). */}
+          {
+
+}
           <div className="hidden sm:block md:hidden w-72 bg-kitt-background bg-opacity-85 backdrop-blur-sm text-kitt-txt p-4 rounded-lg shadow-2xl">
             <h2 className="text-lg font-bold text-kitt-primary mb-2">
               Журнал путешественников
@@ -300,8 +273,8 @@ export default function MainPage({
         </div>
       </div>
 
-      {/* Оригинальный десктопный журнал (768px+) — приклеен к низу страницы,
-          как было изначально, без изменений. */}
+      {
+}
       <div className="hidden md:block absolute bottom-5 w-96 bg-kitt-background bg-opacity-85 backdrop-blur-sm text-kitt-txt p-6 rounded-lg shadow-2xl">
         <h2 className="text-2xl font-bold text-kitt-primary mb-4">
           Журнал путешественников
@@ -332,7 +305,7 @@ export default function MainPage({
         )}
       </div>
 
-      {/* До 640px журнал остаётся отдельным абсолютным блоком, как раньше. */}
+      {}
       <div className="absolute sm:hidden top-28 left-1/2 -translate-x-1/2 w-[80%] max-w-72 bg-kitt-background/50 backdrop-blur-sm text-kitt-txt p-3 rounded-lg shadow-md opacity-70 hover:opacity-100 transition-opacity duration-300">
         <h2 className="text-xs font-bold text-kitt-primary mb-2">
           Журнал путешественников

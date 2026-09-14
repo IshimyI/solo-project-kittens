@@ -48,10 +48,6 @@ export default function ProfilePage({
     }
   }, [user, navigate]);
 
-  // overflow-hidden на самой странице не блокирует прокрутку — реально
-  // скроллится body. Абсолютно позиционированные элементы гардероба могут
-  // вылезать за границы вьюпорта по ширине, поэтому жёстко фиксируем
-  // именно горизонтальный скролл на body, пока страница показана.
   useEffect(() => {
     const prevBodyOverflowX = document.body.style.overflowX;
     const prevHtmlOverflowX = document.documentElement.style.overflowX;
@@ -63,8 +59,6 @@ export default function ProfilePage({
     };
   }, []);
 
-  // Группируем уже загруженный на уровне App список купленных вещей —
-  // без отдельного похода в сеть при каждом заходе в гардероб.
   const wardrobe = {
     hat: boughtProducts
       .filter((item) => item.Shop && item.Shop.typeId === 1)
@@ -102,10 +96,9 @@ export default function ProfilePage({
 
   return (
     <div className="relative h-full overflow-hidden bg-[length:auto_100%] bg-[36%_50%] bg-fixed md:bg-none bg-[url('/imgs/wardrobe-mobile-bg.png')]">
-      {/* Десктопный фон — CSS background с repeat-x: растёт симметрично от
-          центра (позиция не зависит от ширины контейнера), а когда картинки
-          не хватает по бокам, она мягко продолжается повтором вместо
-          обрыва в пустоту. */}
+      {
+
+}
       <div
         className="hidden md:block absolute inset-0"
         style={{
@@ -122,11 +115,11 @@ export default function ProfilePage({
         </h1>
       </div>
 
-      {/* Мобильный кот + стрелки — наложены друг на друга в одной точке:
-          кот на заднем плане, ряды со стрелками поверх него. */}
+      {
+}
       <div className="md:hidden absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center px-4 pointer-events-none">
         <div className="relative shrink-0 w-200 h-200">
-          {/* Кот — задний план, клики не перехватывает, чуть смещён влево */}
+          {}
           <div
             className="absolute inset-0 z-0 pointer-events-none"
             style={{ transform: "translate(-24px, 15px)" }}
@@ -154,7 +147,7 @@ export default function ProfilePage({
             )}
           </div>
 
-          {/* Стрелки — поверх кота, по центру той же области */}
+          {}
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-20">
             {[
               { category: "hat", selected: selectedHat },
@@ -189,16 +182,14 @@ export default function ProfilePage({
         </div>
       </div>
 
-      {/* Десктопная версия — как было, без изменений. */}
+      {}
       <div
         className="hidden md:flex items-center justify-center gap-16 overflow-visible w-[768px] max-w-full mx-auto"
         style={{ height: "100%" }}
       >
-        {/* Размер и позиция — в процентах от высоты ЭТОГО контейнера
-            (100% = высота страницы, как и у фона), а не в vh: vh считается
-            от высоты всего окна браузера, что не совпадает с высотой
-            страницы (минус хедер) и давало дрейф относительно фона при
-            росте экрана. */}
+        {
+
+}
         <div
           className="w-56 shrink-0 flex flex-col items-center"
           style={{ height: "100%" }}
@@ -230,9 +221,9 @@ export default function ProfilePage({
             )}
           </div>
         </div>
-        {/* Единый фон-шкаф с 3x3 полками — все 9 позиций (previous/current/next
-            для hat/body/coat) размещены поверх него абсолютно, по координатам
-            видимых полок на картинке. */}
+        {
+
+}
         <div
           className="relative shrink-0"
           style={{ height: "73.4%", aspectRatio: "527 / 470", top: "-3.1%" }}

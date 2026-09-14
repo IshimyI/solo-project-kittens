@@ -8,10 +8,7 @@ const tokensRouter = express.Router();
 
 tokensRouter.get("/refresh", verifyRefreshToken, async (req, res) => {
   try {
-    // res.locals.user — это данные из самого JWT (снимок на момент выдачи
-    // токена), монеты там могут быть устаревшими. Перечитываем актуального
-    // пользователя из БД, чтобы после перезагрузки страницы не откатывались
-    // монеты до значения на момент логина.
+
     const freshUser = await User.findByPk(res.locals.user.id, {
       attributes: ["id", "name", "email", "coins"],
     });

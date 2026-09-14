@@ -127,10 +127,6 @@ router.put("/user-selected-items", async (req, res) => {
   }
 });
 
-// Atomic purchase: validates the price server-side (never trusts the
-// client), and deducts coins + grants the item in one transaction so a
-// crash or race between two purchases can't leave coins deducted with no
-// item granted, or an item granted for free.
 router.post("/shop/buy", async (req, res) => {
   const { itemId } = req.body;
   if (!itemId) {

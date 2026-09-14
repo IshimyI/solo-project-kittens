@@ -1,5 +1,5 @@
-// Локальный список стран (ru/en) — раньше грузился с restcountries.com,
-// но этот API нестабилен и периодически блокирует запросы по CORS.
+
+
 export const COUNTRIES = [
   { ru: "Франция", en: "France" },
   { ru: "Италия", en: "Italy" },

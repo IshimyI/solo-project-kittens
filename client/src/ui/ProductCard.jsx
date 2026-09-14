@@ -7,9 +7,9 @@ export default function ProductCard({ product, buyItem }) {
         {product.TypeOfCloth.name}
       </h4>
       <div className="relative overflow-hidden flex items-center justify-center">
-        {/* Полупрозрачный силуэт кота позади — размер карточки по-прежнему
-            задаёт сама картинка товара (как раньше), силуэт лишь
-            подложен и обрезается по её границам, если не помещается. */}
+        {
+
+}
         <img
           src="/imgs/coat1.png"
           alt=""

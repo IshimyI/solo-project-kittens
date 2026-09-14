@@ -11,7 +11,6 @@ export function setAccessToken(newToken) {
   accessToken = newToken;
 }
 
-// Пишем перехватчик для приклеивания accessToken к каждому запросу
 axiosInstance.interceptors.request.use((config) => {
   if (!config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${accessToken}`;
@@ -19,7 +18,6 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
-// Пишем перехватчик для перевыпуска accessToken при его истечении
 axiosInstance.interceptors.response.use(
   (res) => res,
   async (error) => {

@@ -10,10 +10,9 @@ export default function Layout({ user, handleLogout, toggleMusic, isPlaying }) {
         toggleMusic={toggleMusic}
         isPlaying={isPlaying}
       />
-      {/* Страницы (MainPage/ProfilePage) высчитывали свою высоту через
-          фиксированный vh, что не совпадало с реальной (переменной)
-          высотой навбара и оставляло щель снизу. Теперь страница просто
-          занимает ровно оставшееся место. */}
+      {
+
+}
       <div className="flex-1 min-h-0">
         <Outlet />
       </div>

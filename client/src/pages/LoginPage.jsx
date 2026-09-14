@@ -10,8 +10,6 @@ export default function LoginPage({ handleLogin, user }) {
     }
   }, [user, navigate]);
 
-  // overflow-hidden на самой странице не блокирует прокрутку — реально
-  // скроллится body. Жёстко фиксируем его, пока страница показана.
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -27,9 +25,9 @@ export default function LoginPage({ handleLogin, user }) {
         className="relative bg-kitt-foreground p-8 pt-20 rounded-2xl shadow-2xl border border-white/20 max-w-sm w-full"
       >
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-48 select-none pointer-events-none">
-          {/* Оба изображения нарисованы на одном холсте 1533x1482 — как
-              шляпа/тело/пальто в самой игре, поэтому просто накладываем их
-              друг на друга в одинаковом размере и позиции. */}
+          {
+
+}
           <img src="/imgs/coat1.png" alt="" aria-hidden="true" className="w-full drop-shadow-xl" />
           <img
             src="/imgs/hat6.png"

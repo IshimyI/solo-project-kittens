@@ -10,8 +10,6 @@ export default function SignUpPage({ handleSignUp, user }) {
     }
   }, [user, navigate]);
 
-  // overflow-hidden на самой странице не блокирует прокрутку — реально
-  // скроллится body. Жёстко фиксируем его, пока страница показана.
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
