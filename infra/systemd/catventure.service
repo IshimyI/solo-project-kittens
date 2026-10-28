@@ -1,0 +1,13 @@
+[Unit]
+Description=Catventure server
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/catventure/server
+ExecStart=/usr/bin/node --env-file=.env src/app.js
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
